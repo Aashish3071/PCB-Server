@@ -1,6 +1,7 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Analytics } from '@vercel/analytics/react';
 import { router } from './router';
 
 // Initialize TanStack Query Client
@@ -18,6 +19,7 @@ export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <Analytics />
     </QueryClientProvider>
   );
 };
