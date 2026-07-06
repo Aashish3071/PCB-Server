@@ -1,0 +1,20 @@
+backend:
+  url: http://localhost:8000
+fleet:
+  size: 500
+provision:
+  auto: false
+telemetry:
+  interval_seconds: 5
+  batch_size: 100
+  max_request_size_mb: 1
+simulation:
+  speed_multiplier: 1
+  random_seed: 42
+logging:
+  level: INFO
+  file: logs/simulator.log
+protocol:
+  telemetry_version: 1
+simulator:
+  version: 1.0.0

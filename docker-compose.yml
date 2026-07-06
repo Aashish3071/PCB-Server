@@ -1,0 +1,65 @@
+# Full local / self-hosted stack: Postgres + FastAPI backend + nginx-served frontend.
+# For managed deployment (Supabase DB + Fly/Render backend + Vercel frontend) see DEPLOYMENT.md.
+#
+# Usage:
+#   1. cp backend/.env.example backend/.env   # fill in Supabase values
+#   2. docker compose up --build
+#   3. bootstrap admin once (see DEPLOYMENT.md)
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: iot_dms_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-iotadmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secretpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-iot_dms}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iotadmin} -d ${POSTGRES_DB:-iot_dms}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: iot_dms_backend
+    restart: always
+    # Supabase + threshold values come from backend/.env ...
+    env_file:
+      - ./backend/.env
+    # ... but DATABASE_URL and CORS are overridden for the container network.
+    # (environment takes precedence over env_file.)
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-iotadmin}:${POSTGRES_PASSWORD:-secretpassword}@db:5432/${POSTGRES_DB:-iot_dms}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # The image entrypoint runs `alembic upgrade head` before starting uvicorn.
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the client bundle at build time — browser-accessible values only.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    container_name: iot_dms_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
