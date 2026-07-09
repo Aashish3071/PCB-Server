@@ -125,26 +125,11 @@ class VirtualDevice:
         }
 
     def get_telemetry(self) -> Dict[str, Any]:
-        """Generate the payload structure expected by the backend telemetry API."""
+        """Generate the payload structure expected by the backend telemetry API (MVP Validation Profile)."""
         return {
             "timestamp": datetime.fromtimestamp(self.runtime.simulation_time, tz=timezone.utc).isoformat(),
-            "sequence_number": self.runtime.sequence_number,
             "temperature": round(self.sensors.temperature, 2),
-            "humidity": round(self.sensors.humidity, 2),
-            "panel_voltage": round(self.sensors.panel_voltage, 2),
-            "charging_current": round(self.sensors.charging_current, 2),
-            "battery_voltage": round(self.sensors.battery_voltage, 2),
-            "battery_percentage": round(self.sensors.battery_percentage, 2),
-            "charging_status": self.runtime.mode == DeviceMode.CHARGING,
-            "light_load_status": self.sensors.light_load_status,
-            "signal_strength": self.network.signal_strength,
-            
-            # Diagnostic Fields
-            "hardware_version": self.identity.hardware_version,
-            "firmware_version": self.identity.firmware_version,
-            "boot_count": self.runtime.boot_count,
-            "uptime_seconds": self.runtime.uptime_seconds,
-            "network_type": self.network.network_type
+            "humidity": round(self.sensors.humidity, 2)
         }
         
     def reset(self):

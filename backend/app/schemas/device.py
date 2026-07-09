@@ -61,3 +61,10 @@ class DeviceOverviewResponse(BaseModel):
     latest_telemetry: Optional[Any] = None # Will map to TelemetryRead in the route
     analytics: DeviceAnalytics
     recent_alerts: List[Any] = Field(default_factory=list) # Will map to AlertRead
+
+class DeviceHeartbeat(BaseModel):
+    online_status: bool
+    last_seen: Optional[datetime] = None
+    seconds_since_last_packet: Optional[int] = None
+    latest_temperature: Optional[float] = None
+    latest_humidity: Optional[float] = None

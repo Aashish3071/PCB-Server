@@ -27,7 +27,7 @@ export const DeviceDetails: React.FC = () => {
   const [telemetryPage, setTelemetryPage] = useState(1);
   const telemetryPageSize = 10;
 
-  // Overview Query (Auto-refreshes every 30 seconds)
+  // Overview Query
   const { 
     data: overview, 
     isLoading: isOverviewLoading, 
@@ -39,8 +39,19 @@ export const DeviceDetails: React.FC = () => {
     queryFn: async () => {
       const res = await api.get(`/api/v1/devices/${id}/overview`);
       return res.data;
+    }
+  });
+
+  // Heartbeat Query (Auto-refreshes every 5 seconds)
+  const {
+    data: heartbeat
+  } = useQuery({
+    queryKey: ['device_heartbeat', id],
+    queryFn: async () => {
+      const res = await api.get(`/api/v1/devices/${id}/heartbeat`);
+      return res.data;
     },
-    refetchInterval: 30000 // 30 seconds auto-refresh
+    refetchInterval: 5000 // 5 seconds auto-refresh
   });
 
   // Telemetry History Query
@@ -139,6 +150,42 @@ export const DeviceDetails: React.FC = () => {
           </div>
         }
       />
+
+      {/* Firmware Validation (MVP) Card */}
+      {heartbeat && (
+        <div className="bg-white p-5 rounded-lg shadow-sm border border-blue-200 mb-4">
+          <h3 className="text-sm font-medium text-blue-900 mb-4 flex items-center">
+            <Activity className="w-4 h-4 mr-2 text-blue-500" />
+            Firmware Validation Status (Live)
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="flex flex-col border border-gray-100 p-3 rounded-md bg-gray-50">
+              <span className="text-xs text-gray-500 mb-1">Status</span>
+              <span className={`text-lg font-bold ${heartbeat.online_status ? 'text-green-600' : 'text-red-600'}`}>
+                {heartbeat.online_status ? 'ONLINE' : 'OFFLINE'}
+              </span>
+            </div>
+            <div className="flex flex-col border border-gray-100 p-3 rounded-md bg-gray-50">
+              <span className="text-xs text-gray-500 mb-1">Last Seen</span>
+              <span className="text-lg font-semibold text-gray-900">
+                {heartbeat.seconds_since_last_packet !== null ? `${heartbeat.seconds_since_last_packet}s ago` : 'Never'}
+              </span>
+            </div>
+            <div className="flex flex-col border border-gray-100 p-3 rounded-md bg-gray-50">
+              <span className="text-xs text-gray-500 mb-1 flex items-center"><Thermometer className="w-3 h-3 mr-1"/> Temp</span>
+              <span className="text-lg font-semibold text-gray-900">
+                {heartbeat.latest_temperature !== null ? `${heartbeat.latest_temperature}°C` : '—'}
+              </span>
+            </div>
+            <div className="flex flex-col border border-gray-100 p-3 rounded-md bg-gray-50">
+              <span className="text-xs text-gray-500 mb-1 flex items-center"><Droplets className="w-3 h-3 mr-1"/> Humidity</span>
+              <span className="text-lg font-semibold text-gray-900">
+                {heartbeat.latest_humidity !== null ? `${heartbeat.latest_humidity}%` : '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Section 1: Device Information */}

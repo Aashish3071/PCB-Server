@@ -23,6 +23,11 @@ class TelemetryRepository(BaseRepository[Telemetry, Any, Any]):
         
         return items, total
 
+    async def get_latest_telemetry(self, db: AsyncSession, device_id: UUID) -> Optional[Telemetry]:
+        stmt = select(Telemetry).where(Telemetry.device_id == device_id).order_by(desc(Telemetry.timestamp)).limit(1)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_device_analytics(self, db: AsyncSession, device_id: UUID, since: datetime) -> DeviceAnalytics:
         # Aggregations
         agg_stmt = select(

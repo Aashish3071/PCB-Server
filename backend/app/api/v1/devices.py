@@ -16,12 +16,15 @@ from app.schemas.device import (
     DeviceProvisioned,
     DeviceStatus,
     DeviceListRead,
-    DeviceOverviewResponse
+    DeviceOverviewResponse,
+    DeviceHeartbeat
 )
 from app.schemas.telemetry import TelemetryRead
 from app.schemas.common import Page
 from app.services.device import device_service
 from app.repositories.device import device_repo
+from app.repositories.telemetry import telemetry_repo
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
@@ -113,6 +116,37 @@ async def get_device(
     device: Device = Depends(get_accessible_device)
 ):
     return device
+
+@router.get(
+    "/{device_id}/heartbeat",
+    response_model=DeviceHeartbeat,
+    summary="Get device heartbeat for firmware validation"
+)
+async def get_device_heartbeat(
+    device: Device = Depends(get_accessible_device),
+    db: AsyncSession = Depends(get_db)
+):
+    online_status = device.status == "ONLINE"
+    
+    seconds_since = None
+    if device.last_seen_at:
+        seconds_since = int((datetime.now(timezone.utc) - device.last_seen_at).total_seconds())
+        
+    latest_temp = None
+    latest_hum = None
+    
+    latest_tel = await telemetry_repo.get_latest_telemetry(db, device.id)
+    if latest_tel:
+        latest_temp = latest_tel.temperature
+        latest_hum = latest_tel.humidity
+        
+    return DeviceHeartbeat(
+        online_status=online_status,
+        last_seen=device.last_seen_at,
+        seconds_since_last_packet=seconds_since,
+        latest_temperature=latest_temp,
+        latest_humidity=latest_hum
+    )
 
 @router.get(
     "/{device_id}/overview",

@@ -130,6 +130,17 @@ class FleetManager:
             api_key=device.identity.api_key,
             payload=record.payload
         )
+        
+        # Improved Console Output for MVP Validation
+        print(f"Device: {device.identity.device_uid}")
+        print(f"Authenticated: {'YES' if result.status_code != 401 else 'NO'}")
+        print(f"Packet #{record.sequence_number}")
+        print(f"Temperature: {record.payload.get('temperature', 'N/A')}°C")
+        print(f"Humidity: {record.payload.get('humidity', 'N/A')}%")
+        print(f"Response: {result.status_code} {'OK' if result.success else 'Error'}")
+        print(f"Latency: {int(result.latency_ms)} ms")
+        print("-" * 20)
+
         buffer.acknowledge_batch([record.record_id], result.success)
         return result
 

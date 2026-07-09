@@ -86,6 +86,10 @@ It acts as the primary interface for both the frontend administration dashboard 
     # "/api/v1/alerts" here would double the segment (/api/v1/alerts/alerts).
     app.include_router(alerts_router, prefix=settings.API_V1_STR)
 
+    @app.get("/")
+    async def root():
+        return {"status": "ok", "message": "PCB Server API is running! 🚀", "version": "0.1.0"}
+
     @app.middleware("http")
     async def add_request_id_middleware(request: Request, call_next):
         req_id = str(uuid4())
