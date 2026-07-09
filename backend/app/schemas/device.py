@@ -47,6 +47,8 @@ class DeviceListRead(DeviceRead):
     customer_name: Optional[str] = None
     battery_percentage: Optional[float] = None
     signal_strength: Optional[int] = None
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
 
 class DeviceAnalytics(BaseModel):
     battery_avg: Optional[float] = None

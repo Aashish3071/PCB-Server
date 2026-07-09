@@ -158,6 +158,8 @@ export const DeviceList: React.FC = () => {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Battery</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signal</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temp</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Humidity</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => { setSort('last_seen_at'); setOrder(order === 'desc' ? 'asc' : 'desc'); }}>
                   Last Seen {sort === 'last_seen_at' && (order === 'desc' ? '↓' : '↑')}
                 </th>
@@ -174,14 +176,16 @@ export const DeviceList: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-4 w-32" /></td>
                     <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-4 w-12" /></td>
                     <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-4 w-12" /></td>
+                    <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-4 w-12" /></td>
+                    <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-4 w-12" /></td>
                     <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-4 w-24" /></td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><Skeleton className="h-5 w-5 ml-auto" /></td>
                   </tr>
                 ))
               ) : isError ? (
-                <tr><td colSpan={8} className="px-6 py-10 text-center text-red-500">Failed to load devices.</td></tr>
+                <tr><td colSpan={10} className="px-6 py-10 text-center text-red-500">Failed to load devices.</td></tr>
               ) : data?.items.length === 0 ? (
-                <tr><td colSpan={8} className="px-6 py-10 text-center text-gray-500">No devices found.</td></tr>
+                <tr><td colSpan={10} className="px-6 py-10 text-center text-gray-500">No devices found.</td></tr>
               ) : (
                 data?.items.map((device: any) => (
                   <tr 
@@ -212,6 +216,12 @@ export const DeviceList: React.FC = () => {
                         <Wifi className={`w-4 h-4 mr-1 ${getSignalColor(device.signal_strength)}`} />
                         {device.signal_strength !== null ? `${device.signal_strength} dBm` : '—'}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {device.temperature !== null ? `${device.temperature}°C` : '—'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {device.humidity !== null ? `${device.humidity}%` : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {getRelativeTime(device.last_seen_at)}

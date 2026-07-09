@@ -97,7 +97,9 @@ class DeviceRepository(BaseRepository[Device, DeviceCreate, DeviceUpdate]):
             select(
                 Telemetry.device_id,
                 Telemetry.battery_percentage,
-                Telemetry.signal_strength
+                Telemetry.signal_strength,
+                Telemetry.temperature,
+                Telemetry.humidity
             )
             .distinct(Telemetry.device_id)
             .order_by(Telemetry.device_id, desc(Telemetry.timestamp))
@@ -108,7 +110,9 @@ class DeviceRepository(BaseRepository[Device, DeviceCreate, DeviceUpdate]):
             self.model, 
             Customer.company_name, 
             latest_telemetry_subq.c.battery_percentage, 
-            latest_telemetry_subq.c.signal_strength
+            latest_telemetry_subq.c.signal_strength,
+            latest_telemetry_subq.c.temperature,
+            latest_telemetry_subq.c.humidity
         ).join(Customer, self.model.customer_id == Customer.id) \
          .outerjoin(latest_telemetry_subq, self.model.id == latest_telemetry_subq.c.device_id)
 

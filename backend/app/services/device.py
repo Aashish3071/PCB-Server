@@ -36,7 +36,10 @@ class DeviceService:
         
         device_model = items[0][0]
         customer_name = items[0][1]
-        latest_telemetry = items[0][2]
+        battery = items[0][2]
+        signal = items[0][3]
+        temperature = items[0][4]
+        humidity = items[0][5]
         
         device_dict = {
             "id": device_model.id,
@@ -52,8 +55,10 @@ class DeviceService:
             "created_at": device_model.created_at,
             "updated_at": device_model.updated_at,
             "customer_name": customer_name,
-            "battery_percentage": latest_telemetry.battery_percentage if latest_telemetry else None,
-            "signal_strength": latest_telemetry.signal_strength if latest_telemetry else None
+            "battery_percentage": battery,
+            "signal_strength": signal,
+            "temperature": temperature,
+            "humidity": humidity
         }
         device_list_read = DeviceListRead.model_validate(device_dict)
 
@@ -63,12 +68,13 @@ class DeviceService:
         # Concurrent fetches
         analytics_task = telemetry_repo.get_device_analytics(db, device_id, since=since_time)
         alerts_task = alert_repo.get_recent_alerts(db, device_id, limit=5)
+        latest_telemetry_task = telemetry_repo.get_latest_telemetry(db, device_model.id)
         
-        analytics, alerts = await asyncio.gather(analytics_task, alerts_task)
+        analytics, alerts, latest_tel_model = await asyncio.gather(analytics_task, alerts_task, latest_telemetry_task)
         
         return DeviceOverviewResponse(
             device=device_list_read,
-            latest_telemetry=TelemetryRead.model_validate(latest_telemetry) if latest_telemetry else None,
+            latest_telemetry=TelemetryRead.model_validate(latest_tel_model) if latest_tel_model else None,
             analytics=analytics,
             recent_alerts=[AlertRead.model_validate(a) for a in alerts]
         )
@@ -200,9 +206,9 @@ class DeviceService:
             order=order
         )
         
-        # Map the tuples (Device, customer_name, battery, signal) to DeviceListRead
+        # Map the tuples (Device, customer_name, battery, signal, temperature, humidity) to DeviceListRead
         mapped_results = []
-        for device, customer_name, battery, signal in results:
+        for device, customer_name, battery, signal, temperature, humidity in results:
             device_dict = {
                 "id": device.id,
                 "device_uid": device.device_uid,
@@ -218,7 +224,9 @@ class DeviceService:
                 "updated_at": device.updated_at,
                 "customer_name": customer_name,
                 "battery_percentage": battery,
-                "signal_strength": signal
+                "signal_strength": signal,
+                "temperature": temperature,
+                "humidity": humidity
             }
             mapped_results.append(DeviceListRead.model_validate(device_dict))
             
