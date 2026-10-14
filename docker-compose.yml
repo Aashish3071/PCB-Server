@@ -1,0 +1,79 @@
+# ClimaTrack IoT platform — based on ThingsBoard CE 4.3.1.6 (last Apache 2.0 release; 4.4+ is BSL 1.1)
+#
+# Public ports (Traefik):  443 web UI + HTTPS device API, 8883 MQTT over TLS, 80 -> HTTPS redirect.
+# Plain ThingsBoard ports 8080/1883 are bound to 127.0.0.1 for on-server admin scripts only
+# (TB_BIND=0.0.0.0 in .env opens them to the local network for device testing — never on a cloud server).
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: thingsboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d thingsboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  thingsboard:
+    build:
+      context: ./branding
+      args:
+        TB_VERSION: ${TB_VERSION:-4.3.1.6}
+    image: climatrack/platform:${TB_VERSION:-4.3.1.6}
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${TB_BIND:-127.0.0.1}:${TB_HTTP_PORT:-8080}:8080"
+      - "${TB_BIND:-127.0.0.1}:${TB_MQTT_PORT:-1883}:1883"
+    environment:
+      TB_SERVICE_ID: tb-ce-node
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/thingsboard
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JAVA_OPTS: "-Xms512m -Xmx1536m"
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+    volumes:
+      - tb-logs:/var/log/thingsboard
+
+  proxy:
+    image: traefik:v3.7.14
+    restart: always
+    depends_on:
+      - thingsboard
+    command:
+      - --entryPoints.web.address=:80
+      - --entryPoints.web.http.redirections.entryPoint.to=websecure
+      - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      - --entryPoints.websecure.address=:443
+      - --entryPoints.mqtts.address=:8883
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --certificatesResolvers.le.acme.email=${ACME_EMAIL:-admin@example.com}
+      - --certificatesResolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesResolvers.le.acme.httpChallenge.entryPoint=web
+      - --log.level=INFO
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      TLS_MODE: ${TLS_MODE:-local}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8883:8883"
+    volumes:
+      - ./proxy/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./proxy/certs:/certs:ro
+      - letsencrypt:/letsencrypt
+
+volumes:
+  postgres-data:
+  tb-logs:
+  letsencrypt:

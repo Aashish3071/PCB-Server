@@ -1,0 +1,63 @@
+# Traefik routing (file provider; Go templates read the container environment).
+#   TLS_MODE=acme  -> Let's Encrypt certificate for DOMAIN (cloud)
+#   TLS_MODE=local -> certificate from ./certs signed by a local test CA
+http:
+  routers:
+    platform:
+      # Cloud: only the certificate's domain. Local test: any address (localhost, LAN IP).
+      rule: {{ if eq (env "TLS_MODE") "acme" }}Host(`{{ env "DOMAIN" }}`){{ else }}PathPrefix(`/`){{ end }}
+      entryPoints: [websecure]
+      service: platform
+      middlewares: [security-headers]
+      tls:
+{{- if eq (env "TLS_MODE") "acme" }}
+        certResolver: le
+{{- else }}
+        options: default
+{{- end }}
+  middlewares:
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: strict-origin-when-cross-origin
+  services:
+    platform:
+      loadBalancer:
+        servers:
+          - url: http://thingsboard:8080
+
+# MQTT over TLS: devices connect to DOMAIN:8883, Traefik terminates TLS and forwards plain MQTT.
+tcp:
+  routers:
+    mqtts:
+      rule: HostSNI(`*`)
+      entryPoints: [mqtts]
+      service: mqtt
+      tls:
+{{- if eq (env "TLS_MODE") "acme" }}
+        certResolver: le
+        domains:
+          - main: {{ env "DOMAIN" }}
+{{- else }}
+        options: default
+{{- end }}
+  services:
+    mqtt:
+      loadBalancer:
+        servers:
+          - address: thingsboard:1883
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+{{- if ne (env "TLS_MODE") "acme" }}
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/server.crt
+        keyFile: /certs/server.key
+{{- end }}

@@ -1,0 +1,13 @@
+ClimaTrack IoT platform
+Copyright (c) 2026 ClimaTrack Technologies
+
+This product includes software developed by The ThingsBoard Authors
+(ThingsBoard Community Edition 4.3.1.6, https://github.com/thingsboard/thingsboard),
+licensed under the Apache License, Version 2.0 (see LICENSE-thingsboard-apache-2.0.txt).
+
+Modifications made by ClimaTrack Technologies: product name, logos, colours and
+e-mail templates in the web user interface (see branding/patch_brand.py).
+
+Third-party web UI components are listed in /3rdpartylicenses.txt of the web application.
+ThingsBoard is a trademark of its respective owner; this product is not affiliated
+with or endorsed by ThingsBoard, Inc.
